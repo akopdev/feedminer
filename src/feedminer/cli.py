@@ -9,7 +9,9 @@ from pydantic import ValidationError
 from . import __version__
 from .feedminer import run
 from .providers.hup_harvard import HUPHarvardProvider
+from .providers.mit_press import MITProvider
 from .providers.princeton import PrincetonProvider
+from .scrapers.firecrawl import FirecrawlScraper
 from .scrapers.http import AsyncHttpScraper
 from .settings import Settings
 
@@ -21,19 +23,6 @@ def main():
         argument_default=argparse.SUPPRESS,
     )
     parser.add_argument("urls_file", type=Path, help="Text file with one URL per line")
-    parser.add_argument(
-        "--scraper",
-        choices=["http", "firecrawl"],
-        default="http",
-        help="Scraper backend to use (default: http)",
-    )
-    parser.add_argument(
-        "--firecrawl-key",
-        dest="firecrawl_key",
-        default=None,
-        metavar="KEY",
-        help="Firecrawl API key (required when --scraper=firecrawl)",
-    )
     parser.add_argument(
         "--output-dir",
         dest="output_dir",
@@ -80,16 +69,14 @@ def main():
     if not urls:
         sys.exit(f"No URLs found in {settings.urls_file}")
 
-    if settings.scraper == "firecrawl":
-        from .scrapers.firecrawl import FirecrawlScraper
+    scrapers = {
+        "http": AsyncHttpScraper(),
+        "firecrawl": FirecrawlScraper(api_key=settings.firecrawl_key),
+    }
 
-        scraper = FirecrawlScraper(api_key=settings.firecrawl_key)
-    else:
-        scraper = AsyncHttpScraper()
+    providers = [HUPHarvardProvider(), PrincetonProvider(), MITProvider()]
 
-    providers = [HUPHarvardProvider(), PrincetonProvider()]
-
-    asyncio.run(run(urls, scraper, providers, settings.output_dir))
+    asyncio.run(run(urls, scrapers, providers, settings.output_dir))
 
 
 if __name__ == "__main__":

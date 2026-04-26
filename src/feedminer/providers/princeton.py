@@ -51,15 +51,21 @@ class PrincetonProvider(BaseProvider):
         return (app_id.group(1) if app_id else ""), (api_key.group(1) if api_key else "")
 
     def _query_algolia(self, app_id: str, api_key: str, hits_per_page: int = 20) -> list[dict]:
-        payload = json.dumps({
-            "query": "",
-            "hitsPerPage": hits_per_page,
-            "attributesToRetrieve": [
-                "book_title", "book_isbn", "contrib_full_name",
-                "book_published_date_us", "book_overview", "book_listing",
-            ],
-            "filters": "book_primary_edition:true",
-        }).encode()
+        payload = json.dumps(
+            {
+                "query": "",
+                "hitsPerPage": hits_per_page,
+                "attributesToRetrieve": [
+                    "book_title",
+                    "book_isbn",
+                    "contrib_full_name",
+                    "book_published_date_us",
+                    "book_overview",
+                    "book_listing",
+                ],
+                "filters": "book_primary_edition:true",
+            }
+        ).encode()
         req = urllib.request.Request(
             ALGOLIA_QUERY_URL.format(app_id=app_id),
             data=payload,

@@ -25,15 +25,29 @@ def _url_to_filename(url: str) -> str:
 
 async def process_url(
     url: str,
-    scraper: BaseScraper,
+    scrapers: dict[str, BaseScraper],
     providers: list[BaseProvider],
 ) -> tuple[str, Feed | None]:
     provider = _find_provider(url, providers)
     if provider is None:
         logger.warning("No provider matched for %s — skipping", url)
         return url, None
+
+    scraper = scrapers.get(provider.scraper)
+    if scraper is None:
+        logger.warning(
+            "%s requires the '%s' scraper which is not configured — falling back to http",
+            provider.__class__.__name__,
+            provider.scraper,
+        )
+        scraper = scrapers.get("http")
+
+    if scraper is None:
+        logger.error("No scraper available for %s", url)
+        return url, None
+
     try:
-        logger.info("Fetching %s", url)
+        logger.info("Fetching %s (scraper: %s)", url, provider.scraper)
         html = await scraper.fetch(url)
         items = provider.process(html, url)
         logger.info("Parsed %d items from %s", len(items), url)
@@ -46,13 +60,13 @@ async def process_url(
 
 async def run(
     urls: list[str],
-    scraper: BaseScraper,
+    scrapers: dict[str, BaseScraper],
     providers: list[BaseProvider],
     output_dir: Path,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    tasks = [process_url(url, scraper, providers) for url in urls]
+    tasks = [process_url(url, scrapers, providers) for url in urls]
     results = await asyncio.gather(*tasks)
 
     for url, feed in results:

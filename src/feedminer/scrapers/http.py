@@ -3,7 +3,7 @@ import aiohttp
 from .base import BaseScraper
 
 _DEFAULT_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; feedminer/0.1; +https://github.com/akopdev/feedminer)"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 }
 
 

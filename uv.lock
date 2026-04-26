@@ -480,6 +480,7 @@ source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
     { name = "beautifulsoup4" },
+    { name = "firecrawl-py" },
     { name = "lxml" },
     { name = "pydantic" },
 ]
@@ -493,16 +494,13 @@ dev = [
     { name = "pytest-mock" },
     { name = "ruff" },
 ]
-firecrawl = [
-    { name = "firecrawl-py" },
-]
 
 [package.metadata]
 requires-dist = [
     { name = "aiohttp" },
     { name = "aioresponses", marker = "extra == 'dev'" },
     { name = "beautifulsoup4" },
-    { name = "firecrawl-py", marker = "extra == 'firecrawl'" },
+    { name = "firecrawl-py" },
     { name = "lxml" },
     { name = "pydantic" },
     { name = "pytest", marker = "extra == 'dev'" },
@@ -511,7 +509,7 @@ requires-dist = [
     { name = "pytest-mock", marker = "extra == 'dev'" },
     { name = "ruff", marker = "extra == 'dev'" },
 ]
-provides-extras = ["firecrawl", "dev"]
+provides-extras = ["dev"]
 
 [[package]]
 name = "firecrawl-py"

@@ -31,6 +31,8 @@ jobs:
 
       - name: Generate feeds
         run: make build start
+        env:
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
 
       - name: Generate index.html
         run: |

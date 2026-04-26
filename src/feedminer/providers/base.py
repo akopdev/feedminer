@@ -4,6 +4,8 @@ from ..models import FeedItem
 
 
 class BaseProvider(ABC):
+    scraper: str = "http"
+
     @abstractmethod
     def is_active(self, url: str) -> bool:
         """Return True if this provider handles the given URL."""

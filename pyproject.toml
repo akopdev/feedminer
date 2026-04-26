@@ -16,12 +16,10 @@ dependencies = [
     "pydantic",
     "beautifulsoup4",
     "lxml",
+    "firecrawl-py",
 ]
 
 [project.optional-dependencies]
-firecrawl = [
-    "firecrawl-py",
-]
 dev = [
     "aioresponses",
     "ruff",
