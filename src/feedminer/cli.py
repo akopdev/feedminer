@@ -1,72 +1,96 @@
 import argparse
 import asyncio
+import logging
 import sys
+from pathlib import Path
 
 from pydantic import ValidationError
 
 from . import __version__
+from .feedminer import run
+from .providers.hup_harvard import HUPHarvardProvider
+from .scrapers.http import AsyncHttpScraper
 from .settings import Settings
-
-
-async def do_sample_command_1():
-    """Run used defined command 1."""
-
-
-async def do_sample_command_2():
-    """Run user defined command 2."""
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="A short description of the package.",
+        prog="feedminer",
+        description="Fetch URLs and produce RSS feeds.",
         argument_default=argparse.SUPPRESS,
     )
+    parser.add_argument("urls_file", type=Path, help="Text file with one URL per line")
     parser.add_argument(
-        "--list_field", help="Example of multi value list separated by comma.", type=str
+        "--scraper",
+        choices=["http", "firecrawl"],
+        default="http",
+        help="Scraper backend to use (default: http)",
+    )
+    parser.add_argument(
+        "--firecrawl-key",
+        dest="firecrawl_key",
+        default=None,
+        metavar="KEY",
+        help="Firecrawl API key (required when --scraper=firecrawl)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        dest="output_dir",
+        type=Path,
+        default=Path("feeds"),
+        metavar="DIR",
+        help="Directory to write RSS feed files into (default: feeds/)",
+    )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        default=False,
+        help="Enable verbose logging",
     )
     parser.add_argument(
         "--version",
-        help="Print version information and quite",
         action="version",
         version=__version__,
     )
 
-    # Commands
-    commands = parser.add_subparsers(title="Commands", dest="command")
-
-    # Sample command 1
-    sample_command_1 = commands.add_parser(
-        "sample_command_1",
-        help="Sample command description.",
-        argument_default=argparse.SUPPRESS,
-    )
-
-    sample_command_1.set_defaults(func=do_sample_command_1)
-
-    # Sample command 2
-    sample_command_2 = commands.add_parser(
-        "sample_command_2",
-        help="Sample command description.",
-        argument_default=argparse.SUPPRESS,
-    )
-
-    sample_command_2.set_defaults(func=do_sample_command_2)
+    args = parser.parse_args()
 
     try:
-        args = parser.parse_args()
         settings = Settings(**vars(args))
     except ValidationError as e:
         error = e.errors(include_url=False, include_context=False)[0]
         sys.exit(
-            "Wrong argument value passed ({}): {}".format(
+            "Error ({}): {}".format(
                 error.get("loc", ("system",))[0], error.get("msg")
             )
         )
 
-    if args.command:
-        asyncio.run(args.func(settings))
+    logging.basicConfig(
+        level=logging.DEBUG if settings.verbose else logging.WARNING,
+        format="%(levelname)s %(name)s: %(message)s",
+    )
+
+    if not settings.urls_file.exists():
+        sys.exit(f"File not found: {settings.urls_file}")
+
+    urls = [
+        line.strip()
+        for line in settings.urls_file.read_text().splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+
+    if not urls:
+        sys.exit(f"No URLs found in {settings.urls_file}")
+
+    if settings.scraper == "firecrawl":
+        from .scrapers.firecrawl import FirecrawlScraper
+        scraper = FirecrawlScraper(api_key=settings.firecrawl_key)
     else:
-        parser.print_help()
+        scraper = AsyncHttpScraper()
+
+    providers = [HUPHarvardProvider()]
+
+    asyncio.run(run(urls, scraper, providers, settings.output_dir))
 
 
 if __name__ == "__main__":

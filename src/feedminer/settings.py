@@ -1,16 +1,18 @@
+from pathlib import Path
+from typing import Literal
+
 from pydantic import BaseModel, model_validator
 
 
 class Settings(BaseModel):
-    """Validates cli arguments."""
+    urls_file: Path
+    scraper: Literal["http", "firecrawl"] = "http"
+    firecrawl_key: str | None = None
+    output_dir: Path = Path("feeds")
+    verbose: bool = False
 
-    field: str | None = None
-    list_field: list[str] = []
-    bool_field: bool = False
-
-    @model_validator(mode="before")
-    def parse_list_field(values: dict):
-        """You can pass multiple values as a comma separated string."""
-        if isinstance(values.get("list_field"), str):
-            values["list_field"] = values.get("list_field").split(",")
-        return values
+    @model_validator(mode="after")
+    def firecrawl_needs_key(self) -> "Settings":
+        if self.scraper == "firecrawl" and not self.firecrawl_key:
+            raise ValueError("--firecrawl-key is required when using --scraper=firecrawl")
+        return self

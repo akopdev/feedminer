@@ -1,0 +1,49 @@
+name: Generate & Publish Feeds
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'  # every 4 hours
+  push:
+    branches:
+      - main
+    paths:
+      - 'web.txt'
+      - 'src/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Generate feeds
+        run: make start
+
+      - name: Upload feeds artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: feeds/
+
+  deploy:
+    needs: generate
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

@@ -14,9 +14,14 @@ requires-python = ">=3.10"
 dependencies = [
     "aiohttp",
     "pydantic",
+    "beautifulsoup4",
+    "lxml",
 ]
 
 [project.optional-dependencies]
+firecrawl = [
+    "firecrawl-py",
+]
 dev = [
     "aioresponses",
     "ruff",
