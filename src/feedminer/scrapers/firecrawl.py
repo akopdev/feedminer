@@ -1,14 +1,16 @@
 import asyncio
 
-from firecrawl import FirecrawlApp
+from firecrawl.v1.client import V1FirecrawlApp
 
 from .base import BaseScraper
 
 
 class FirecrawlScraper(BaseScraper):
     def __init__(self, api_key: str):
-        self._client = FirecrawlApp(api_key=api_key)
+        self._client = V1FirecrawlApp(api_key=api_key)
 
     async def fetch(self, url: str) -> str:
-        result = await asyncio.to_thread(self._client.scrape_url, url, {"formats": ["html"]})
-        return result.get("html", "")
+        result = await asyncio.to_thread(
+            self._client.scrape_url, url, formats=["html"]
+        )
+        return result.html or ""

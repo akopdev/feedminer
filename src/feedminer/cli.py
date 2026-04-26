@@ -11,6 +11,7 @@ from .feedminer import run
 from .providers.hup_harvard import HUPHarvardProvider
 from .providers.mit_press import MITProvider
 from .providers.princeton import PrincetonProvider
+from .providers.yale import YaleProvider
 from .scrapers.firecrawl import FirecrawlScraper
 from .scrapers.http import AsyncHttpScraper
 from .settings import Settings
@@ -69,12 +70,11 @@ def main():
     if not urls:
         sys.exit(f"No URLs found in {settings.urls_file}")
 
-    scrapers = {
-        "http": AsyncHttpScraper(),
-        "firecrawl": FirecrawlScraper(api_key=settings.firecrawl_key),
-    }
+    scrapers = {"http": AsyncHttpScraper()}
+    if settings.firecrawl_key:
+        scrapers["firecrawl"] = FirecrawlScraper(api_key=settings.firecrawl_key)
 
-    providers = [HUPHarvardProvider(), PrincetonProvider(), MITProvider()]
+    providers = [HUPHarvardProvider(), PrincetonProvider(), MITProvider(), YaleProvider()]
 
     asyncio.run(run(urls, scrapers, providers, settings.output_dir))
 
