@@ -42,7 +42,8 @@ def main():
         help="Directory to write RSS feed files into (default: feeds/)",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         default=False,
         help="Enable verbose logging",
@@ -59,11 +60,7 @@ def main():
         settings = Settings(**vars(args))
     except ValidationError as e:
         error = e.errors(include_url=False, include_context=False)[0]
-        sys.exit(
-            "Error ({}): {}".format(
-                error.get("loc", ("system",))[0], error.get("msg")
-            )
-        )
+        sys.exit("Error ({}): {}".format(error.get("loc", ("system",))[0], error.get("msg")))
 
     logging.basicConfig(
         level=logging.DEBUG if settings.verbose else logging.WARNING,
@@ -84,6 +81,7 @@ def main():
 
     if settings.scraper == "firecrawl":
         from .scrapers.firecrawl import FirecrawlScraper
+
         scraper = FirecrawlScraper(api_key=settings.firecrawl_key)
     else:
         scraper = AsyncHttpScraper()

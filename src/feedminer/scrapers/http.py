@@ -12,7 +12,9 @@ class AsyncHttpScraper(BaseScraper):
         self._timeout = aiohttp.ClientTimeout(total=timeout)
 
     async def fetch(self, url: str) -> str:
-        async with aiohttp.ClientSession(timeout=self._timeout, headers=_DEFAULT_HEADERS) as session:
+        async with aiohttp.ClientSession(
+            timeout=self._timeout, headers=_DEFAULT_HEADERS
+        ) as session:
             async with session.get(url) as response:
                 response.raise_for_status()
                 return await response.text()

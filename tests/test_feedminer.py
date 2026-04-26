@@ -1,11 +1,7 @@
-import asyncio
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
-
 import pytest
 
 from feedminer.feedminer import process_url, run
-from feedminer.models import Feed, FeedItem
+from feedminer.models import FeedItem
 from feedminer.providers.base import BaseProvider
 from feedminer.scrapers.base import BaseScraper
 
@@ -19,7 +15,9 @@ class StubScraper(BaseScraper):
 
 
 class StubProvider(BaseProvider):
-    def __init__(self, domain: str, items: list[FeedItem] | None = None, raise_on_process: bool = False):
+    def __init__(
+        self, domain: str, items: list[FeedItem] | None = None, raise_on_process: bool = False
+    ):
         self._domain = domain
         self._items = items or []
         self._raise = raise_on_process

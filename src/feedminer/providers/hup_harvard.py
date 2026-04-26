@@ -49,12 +49,14 @@ class HUPHarvardProvider(BaseProvider):
                 if img_tag:
                     image_url = img_tag.get("data-src") or img_tag.get("src")
 
-                items.append(FeedItem(
-                    title=title,
-                    url=url,
-                    author=author,
-                    image_url=image_url,
-                ))
+                items.append(
+                    FeedItem(
+                        title=title,
+                        url=url,
+                        author=author,
+                        image_url=image_url,
+                    )
+                )
             except Exception as exc:
                 logger.warning("Skipping malformed card: %s", exc)
                 continue

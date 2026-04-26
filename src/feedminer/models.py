@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from email.utils import format_datetime
+
 from pydantic import BaseModel
 
 
@@ -25,7 +26,9 @@ class Feed(BaseModel):
             object.__setattr__(self, "generated_at", datetime.now(tz=timezone.utc))
 
     def to_rss(self) -> str:
-        rss = ET.Element("rss", version="2.0", attrib={"xmlns:media": "http://search.yahoo.com/mrss/"})
+        rss = ET.Element(
+            "rss", version="2.0", attrib={"xmlns:media": "http://search.yahoo.com/mrss/"}
+        )
         channel = ET.SubElement(rss, "channel")
 
         ET.SubElement(channel, "title").text = self.title

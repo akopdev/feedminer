@@ -15,7 +15,5 @@ class FirecrawlScraper(BaseScraper):
         self._client = FirecrawlApp(api_key=api_key)
 
     async def fetch(self, url: str) -> str:
-        result = await asyncio.to_thread(
-            self._client.scrape_url, url, {"formats": ["html"]}
-        )
+        result = await asyncio.to_thread(self._client.scrape_url, url, {"formats": ["html"]})
         return result.get("html", "")

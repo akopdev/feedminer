@@ -32,7 +32,11 @@ def test_feed_to_rss_image():
     feed = Feed(
         title="Feed",
         url="https://example.com",
-        items=[FeedItem(title="X", url="https://example.com/x", image_url="https://example.com/img.jpg")],
+        items=[
+            FeedItem(
+                title="X", url="https://example.com/x", image_url="https://example.com/img.jpg"
+            )
+        ],
     )
     xml = feed.to_rss()
     assert "media:content" in xml
