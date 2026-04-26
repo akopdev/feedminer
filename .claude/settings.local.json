@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.hup.harvard.edu)",
+      "Bash(curl -s -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" \"https://www.hup.harvard.edu/new-releases?sort=date\")",
+      "Bash(pip install:*)",
+      "Bash(curl -s -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36\" \"https://www.hup.harvard.edu/new-releases?sort=date\")",
+      "Bash(python3 -)",
+      "Bash(pip3 install:*)",
+      "Bash(python3 -m venv .venv)",
+      "Bash(.venv/bin/pip install:*)",
+      "Bash(.venv/bin/python3 -)",
+      "Bash(.venv/bin/python3:*)",
+      "Bash(.venv/bin/pytest:*)",
+      "Bash(.venv/bin/feedminer --output-dir /tmp/hup_feeds /tmp/urls.txt)",
+      "Bash(curl -s -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36\" \"https://press.princeton.edu/books\")",
+      "Bash(curl -s -A \"Mozilla/5.0\" \"https://press.princeton.edu/books\")",
+      "Bash(curl -s \"https://press.princeton.edu/modules/custom/pup_algolia/js/books-search-page.js?te0dmb\")",
+      "Bash(curl -s -X POST https://OWWQ1C6EL0-dsn.algolia.net/1/indexes/books_search/query -H 'X-Algolia-Application-Id: OWWQ1C6EL0' -H 'X-Algolia-API-Key: 765bd59e29c51e402d1362e72981b1cf' -H 'Content-Type: application/json' -d '{\"query\":\"\",\"hitsPerPage\":5,\"attributesToRetrieve\":[\"title\",\"author\",\"isbn\",\"coverImage\",\"url\",\"publicationDate\",\"description\"]}')",
+      "Bash(.venv/bin/feedminer --output-dir /tmp/feeds_test web.txt)"
+    ]
+  }
+}

@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from . import __version__
 from .feedminer import run
 from .providers.hup_harvard import HUPHarvardProvider
+from .providers.princeton import PrincetonProvider
 from .scrapers.http import AsyncHttpScraper
 from .settings import Settings
 
@@ -86,7 +87,7 @@ def main():
     else:
         scraper = AsyncHttpScraper()
 
-    providers = [HUPHarvardProvider()]
+    providers = [HUPHarvardProvider(), PrincetonProvider()]
 
     asyncio.run(run(urls, scraper, providers, settings.output_dir))
 
