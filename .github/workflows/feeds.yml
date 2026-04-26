@@ -32,6 +32,22 @@ jobs:
       - name: Generate feeds
         run: make start
 
+      - name: Generate index.html
+        run: |
+          {
+            echo "<!DOCTYPE html>"
+            echo "<html lang=\"en\"><head><meta charset=\"UTF-8\">"
+            echo "<title>feedminer — RSS Feeds</title></head><body>"
+            echo "<h1>RSS Feeds</h1>"
+            echo "<p>Updated: $(date -u '+%Y-%m-%d %H:%M UTC')</p>"
+            echo "<ul>"
+            for f in feeds/*.xml; do
+              name=$(basename "$f")
+              echo "  <li><a href=\"$name\">$name</a></li>"
+            done
+            echo "</ul></body></html>"
+          } > feeds/index.html
+
       - name: Upload feeds artifact
         uses: actions/upload-pages-artifact@v3
         with:
