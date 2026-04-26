@@ -5,9 +5,6 @@ A simple proof-of-concept prototype of using GitHub as a free web-to-rss gateway
 
 Most likely you won't find anything interesing for yourself here.
 
-[![License](https://img.shields.io/github/license/akopdev/feedminer)](./LICENSE)
-[![Build](https://github.com/akopdev/feedminer/actions/workflows/ci.yml/badge.svg)](https://github.com/akopdev/feedminer/actions)
-
 
 List of supported resources
 ---------------------------
