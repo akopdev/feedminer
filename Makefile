@@ -26,7 +26,6 @@ build: ## Build package
 	@$(UV) build 
 
 start: ## Run package
-	@$(UV) pip install -e .
 	@$(UVR) feedminer web.txt
 
 deploy: build ## Publish package

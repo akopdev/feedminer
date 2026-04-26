@@ -30,7 +30,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Generate feeds
-        run: make start
+        run: make build start
 
       - name: Generate index.html
         run: |

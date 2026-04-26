@@ -1,5 +1,5 @@
 # Project specific
-feed/
+feeds/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
