@@ -19,3 +19,9 @@ class BaseProvider(ABC):
     @property
     def feed_title(self) -> str:
         return self.__class__.__name__
+
+    @property
+    def feed_filename(self) -> str | None:
+        """Override to set a custom output filename (without .xml extension).
+        Return None to fall back to the default URL-derived name."""
+        return None

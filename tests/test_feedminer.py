@@ -40,14 +40,14 @@ def scrapers(extra: dict | None = None) -> dict:
 
 @pytest.mark.asyncio
 async def test_process_url_no_matching_provider():
-    _, feed = await process_url("https://unknown.example.com", scrapers(), [])
+    _, feed, _fn = await process_url("https://unknown.example.com", scrapers(), [])
     assert feed is None
 
 
 @pytest.mark.asyncio
 async def test_process_url_provider_failure_is_isolated():
     provider = StubProvider("example.com", raise_on_process=True)
-    _, feed = await process_url("https://example.com", scrapers(), [provider])
+    _, feed, _fn = await process_url("https://example.com", scrapers(), [provider])
     assert feed is None
 
 
@@ -55,7 +55,7 @@ async def test_process_url_provider_failure_is_isolated():
 async def test_process_url_success():
     item = FeedItem(title="My Book", url="https://example.com/book/1", author="Jane Doe")
     provider = StubProvider("example.com", items=[item])
-    _, feed = await process_url("https://example.com/books", scrapers(), [provider])
+    _, feed, _fn = await process_url("https://example.com/books", scrapers(), [provider])
     assert feed is not None
     assert len(feed.items) == 1
     assert feed.items[0].title == "My Book"
@@ -88,7 +88,7 @@ async def test_process_url_falls_back_when_scraper_missing():
 
     provider = FirecrawlProvider("example.com")
     # Only http available — should fall back without raising
-    _, feed = await process_url("https://example.com", scrapers(), [provider])
+    _, feed, _fn = await process_url("https://example.com", scrapers(), [provider])
     assert feed is not None
 
 

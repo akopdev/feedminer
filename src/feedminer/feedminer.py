@@ -31,7 +31,7 @@ async def process_url(
     provider = _find_provider(url, providers)
     if provider is None:
         logger.warning("No provider matched for %s — skipping", url)
-        return url, None
+        return url, None, None
 
     scraper = scrapers.get(provider.scraper)
     if scraper is None:
@@ -44,18 +44,19 @@ async def process_url(
 
     if scraper is None:
         logger.error("No scraper available for %s", url)
-        return url, None
+        return url, None, None
 
     try:
         logger.info("Fetching %s (scraper: %s)", url, provider.scraper)
         html = await scraper.fetch(url)
         items = provider.process(html, url)
         logger.info("Parsed %d items from %s", len(items), url)
+        filename = provider.feed_filename or _url_to_filename(url).removesuffix(".xml")
         feed = Feed(title=provider.feed_title, url=url, items=items)
-        return url, feed
+        return url, feed, filename
     except Exception as exc:
         logger.error("Failed to process %s: %s", url, exc)
-        return url, None
+        return url, None, None
 
 
 async def run(
@@ -69,13 +70,13 @@ async def run(
     tasks = [process_url(url, scrapers, providers) for url in urls]
     results = await asyncio.gather(*tasks)
 
-    for url, feed in results:
+    for url, feed, filename in results:
         if feed is None:
             continue
         xml = feed.to_rss()
-        out_path = output_dir / _url_to_filename(url)
+        out_path = output_dir / (filename + ".xml")
         out_path.write_text(xml, encoding="utf-8")
         logger.info("Saved %s (%d items)", out_path, len(feed.items))
 
-    success = sum(1 for _, f in results if f is not None)
+    success = sum(1 for _, f, _fn in results if f is not None)
     print(f"Done: {success}/{len(urls)} feeds written to {output_dir}/")

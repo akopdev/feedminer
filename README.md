@@ -14,3 +14,4 @@ List of supported resources
 - https://mitpress.mit.edu/new-releases/
 - https://yalebooks.yale.edu/books/new-releases/
 - https://www.sup.org/books/subjects/middle-east-studies
+- https://www.nature.com/books-culture
