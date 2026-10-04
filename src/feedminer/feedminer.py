@@ -50,6 +50,7 @@ async def process_url(
         logger.info("Fetching %s (scraper: %s)", url, provider.scraper)
         html = await scraper.fetch(url)
         items = provider.process(html, url)
+        items = await provider.enrich(items, scraper)
         logger.info("Parsed %d items from %s", len(items), url)
         filename = provider.feed_filename or _url_to_filename(url).removesuffix(".xml")
         feed = Feed(title=provider.feed_title, url=url, items=items)

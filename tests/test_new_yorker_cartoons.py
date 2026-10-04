@@ -51,3 +51,34 @@ def test_process_fields():
 
 def test_process_empty():
     assert PROVIDER.process("<html></html>", SOURCE) == []
+
+
+DETAIL_HTML = """
+<html><head><meta name="description" content="Enrico Pinto’s Daily Cartoon riffs on caterpillars."/></head><body>
+<div class="responsive-cartoon">
+  <img alt="From within a cocoon a frightened caterpillar stares out." src="https://media.newyorker.com/cartoons/abc/master/w_1600%2Cc_limit/A62289.jpg"/>
+  <div class="responsive-cartoon__caption"><span class="caption__text"> “How can you stand it out there?”</span></div>
+  <div class="responsive-cartoon__credit"><span class="caption__credit">Cartoon by Enrico Pinto</span></div>
+</div></body></html>
+"""
+
+
+class FakeScraper:
+    async def fetch(self, url):
+        if url.endswith("thursday-october-1st-only-poll"):
+            raise RuntimeError("boom")
+        return DETAIL_HTML
+
+
+def test_enrich_adds_caption_credit_and_description():
+    import asyncio
+
+    items = PROVIDER.process(SAMPLE_HTML, SOURCE)
+    first, second = asyncio.run(PROVIDER.enrich(items, FakeScraper()))
+    assert "<b>“How can you stand it out there?”</b>" in first.description
+    assert "frightened caterpillar" in first.description
+    assert "Cartoon by Enrico Pinto" in first.description
+    assert first.author == "Enrico Pinto"
+    assert "/master/" in first.image_url
+    # a failed page fetch leaves the listing data intact
+    assert second.description is None and second.url.endswith("only-poll")

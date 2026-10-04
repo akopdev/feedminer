@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from ..models import FeedItem
+from ..scrapers.base import BaseScraper
 
 
 class BaseProvider(ABC):
@@ -15,6 +16,10 @@ class BaseProvider(ABC):
     def process(self, html: str, source_url: str) -> list[FeedItem]:
         """Parse HTML and return a list of FeedItem instances."""
         ...
+
+    async def enrich(self, items: list[FeedItem], scraper: BaseScraper) -> list[FeedItem]:
+        """Optionally fetch per-item pages to fill in details missing from the listing."""
+        return items
 
     @property
     def feed_title(self) -> str:
