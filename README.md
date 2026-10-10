@@ -16,3 +16,4 @@ List of supported resources
 - https://www.sup.org/books/subjects/middle-east-studies
 - https://www.nature.com/books-culture
 - https://www.newyorker.com/cartoons/daily-cartoon
+- https://orbooks.com/catalog/?sort=newest

@@ -12,6 +12,7 @@ from .providers.hup_harvard import HUPHarvardProvider
 from .providers.mit_press import MITProvider
 from .providers.nature_books_culture import NatureBooksCultureProvider
 from .providers.new_yorker_cartoons import NewYorkerDailyCartoonProvider
+from .providers.or_books import ORBooksProvider
 from .providers.princeton import PrincetonProvider
 from .providers.science_magazine import ScienceMagazineProvider
 from .providers.stanford import StanfordProvider
@@ -78,7 +79,7 @@ def main():
     if settings.firecrawl_key:
         scrapers["firecrawl"] = FirecrawlScraper(api_key=settings.firecrawl_key)
 
-    providers = [HUPHarvardProvider(), PrincetonProvider(), MITProvider(), YaleProvider(), StanfordProvider(), NatureBooksCultureProvider(), ScienceMagazineProvider(), NewYorkerDailyCartoonProvider()]
+    providers = [HUPHarvardProvider(), PrincetonProvider(), MITProvider(), YaleProvider(), StanfordProvider(), NatureBooksCultureProvider(), ScienceMagazineProvider(), NewYorkerDailyCartoonProvider(), ORBooksProvider()]
 
     asyncio.run(run(urls, scrapers, providers, settings.output_dir))
 
