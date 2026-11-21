@@ -12,7 +12,7 @@ SAMPLE_HTML = textwrap.dedent("""\
           <a href="/9780262553858/the-tales-teeth-tell" target="_blank" title="The Tales Teeth Tell">
             <picture class="sp__the-cover">
               <img alt="The Tales Teeth Tell" class="lazyload"
-                data-src="https://mit-press-us.imgix.net/covers/9780262553858.jpg?auto=format&w=145"
+                data-src="https://mit-press-new-us.imgix.net/covers/9780262553858.jpg?auto=format&w=145"
                 src="lazy-placeholder.jpg"/>
             </picture>
           </a>
@@ -28,7 +28,7 @@ SAMPLE_HTML = textwrap.dedent("""\
           <a href="/9780262549844/macroeconomic-modeling" target="_blank" title="Macroeconomic Modeling">
             <picture class="sp__the-cover">
               <img alt="Macroeconomic Modeling" class="lazyload"
-                data-src="https://mit-press-us.imgix.net/covers/9780262549844.jpg?auto=format&w=145"
+                data-src="https://mit-press-new-us.imgix.net/covers/9780262549844.jpg?auto=format&w=145"
                 src="lazy-placeholder.jpg"/>
             </picture>
           </a>
@@ -72,7 +72,7 @@ def test_process_correct_fields():
     assert first.published_at.year == 2025
     assert first.published_at.month == 1
     assert first.published_at.day == 21
-    assert first.image_url == "https://mit-press-us.imgix.net/covers/9780262553858.jpg"
+    assert first.image_url == "https://mit-press-new-us.imgix.net/covers/9780262553858.jpg"
 
 
 def test_process_image_strips_query_params():
@@ -90,3 +90,42 @@ def test_process_no_grid_returns_empty():
         "<html><body><p>Nothing here</p></body></html>", "https://mitpress.mit.edu/new-releases/"
     )
     assert items == []
+
+
+RENDERED_HTML = textwrap.dedent("""\
+    <html><body>
+    <div class="isbn-grid">
+      <div class="book-wrapper">
+        <div class="image-wrapper">
+          <a href="/9780262052719/morbid"><picture class="sp__the-cover">
+            <img class="lazyloaded"
+              src="https://mit-press-new-us.imgix.net/covers/9780262052719.jpg?auto=format&w=145"/>
+          </picture></a>
+        </div>
+        <div class="info-wrapper">
+          <p class="sp__the-title"><a href="/9780262052719/morbid">Morbid</a></p>
+        </div>
+      </div>
+      <div class="book-wrapper">
+        <div class="image-wrapper">
+          <a href="/9780262057271/beautiful-math"><picture class="sp__the-cover">
+            <img src="https://mitpress.mit.edu/wp-content/themes/university_press_theme/img/lazy-load-image.jpg"/>
+          </picture></a>
+        </div>
+        <div class="info-wrapper">
+          <p class="sp__the-title"><a href="/9780262057271/beautiful-math">Beautiful Math</a></p>
+        </div>
+      </div>
+    </div>
+    </body></html>
+""")
+
+
+def test_process_cover_after_lazyload_swap():
+    items = PROVIDER.process(RENDERED_HTML, "https://mitpress.mit.edu/new-releases/")
+    assert items[0].image_url == "https://mit-press-new-us.imgix.net/covers/9780262052719.jpg"
+
+
+def test_process_cover_falls_back_to_isbn():
+    items = PROVIDER.process(RENDERED_HTML, "https://mitpress.mit.edu/new-releases/")
+    assert items[1].image_url == "https://mit-press-new-us.imgix.net/covers/9780262057271.jpg"

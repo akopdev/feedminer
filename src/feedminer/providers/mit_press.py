@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -10,6 +11,8 @@ from .base import BaseProvider
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://mitpress.mit.edu"
+COVER_HOST = "mit-press-new-us.imgix.net"
+ISBN_RE = re.compile(r"/(97[89]\d{10})/")
 
 
 class MITProvider(BaseProvider):
@@ -60,15 +63,24 @@ class MITProvider(BaseProvider):
             except ValueError:
                 pass
 
-        image_url = None
-        img = card.select_one("img.lazyload[data-src]")
-        if img:
-            image_url = img["data-src"].split("?")[0]
-
         return FeedItem(
             title=title,
             url=url,
             author=author,
             published_at=published_at,
-            image_url=image_url,
+            image_url=self._cover_url(card, href),
         )
+
+    def _cover_url(self, card, href: str) -> str | None:
+        # Firecrawl renders JS, so lazysizes may already have swapped data-src into src
+        # and renamed the "lazyload" class; accept either form, skip the placeholder.
+        for img in card.select("picture img, .image-wrapper img"):
+            for attr in ("data-src", "src"):
+                src = img.get(attr, "")
+                if COVER_HOST in src:
+                    return src.split("?")[0]
+
+        match = ISBN_RE.search(href)
+        if match:
+            return f"https://{COVER_HOST}/covers/{match.group(1)}.jpg"
+        return None
