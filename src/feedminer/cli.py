@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from . import __version__
 from .feedminer import run
+from .providers.economist import EconomistWeeklyEditionProvider
 from .providers.hup_harvard import HUPHarvardProvider
 from .providers.mit_press import MITProvider
 from .providers.nature_books_culture import NatureBooksCultureProvider
@@ -80,7 +81,7 @@ def main():
     if settings.firecrawl_key:
         scrapers["firecrawl"] = FirecrawlScraper(api_key=settings.firecrawl_key)
 
-    providers = [HUPHarvardProvider(), PrincetonProvider(), MITProvider(), YaleProvider(), StanfordProvider(), NatureBooksCultureProvider(), NatureIssuesProvider(), ScienceMagazineProvider(), NewYorkerDailyCartoonProvider(), ORBooksProvider()]
+    providers = [HUPHarvardProvider(), PrincetonProvider(), MITProvider(), YaleProvider(), StanfordProvider(), NatureBooksCultureProvider(), NatureIssuesProvider(), ScienceMagazineProvider(), NewYorkerDailyCartoonProvider(), ORBooksProvider(), EconomistWeeklyEditionProvider()]
 
     asyncio.run(run(urls, scrapers, providers, settings.output_dir))
 

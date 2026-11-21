@@ -18,3 +18,4 @@ List of supported resources
 - https://www.nature.com/nature/volumes
 - https://www.newyorker.com/cartoons/daily-cartoon
 - https://orbooks.com/catalog/?sort=newest
+- https://www.economist.com/weeklyedition
