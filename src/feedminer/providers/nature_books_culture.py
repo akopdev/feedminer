@@ -14,6 +14,7 @@ BASE_URL = "https://www.nature.com"
 
 class NatureBooksCultureProvider(BaseProvider):
     DOMAIN = "nature.com"
+    scraper = "firecrawl"
     PATH = "/books-culture"
 
     @property

@@ -23,6 +23,7 @@ class NatureIssuesProvider(BaseProvider):
     """
 
     DOMAIN = "nature.com"
+    scraper = "firecrawl"
     PATH = "/nature/volumes"
     VOLUMES = 2
 
@@ -40,18 +41,18 @@ class NatureIssuesProvider(BaseProvider):
 
     def process(self, html: str, source_url: str) -> list[FeedItem]:
         soup = BeautifulSoup(html, "lxml")
-        links = soup.select('a[href^="/nature/volumes/"]')
-        volumes = []
-        for link in links:
-            if re.fullmatch(r"/nature/volumes/\d+", link["href"]) and link["href"] not in volumes:
-                volumes.append(link["href"])
+        # Links are relative in the raw page but absolute in Firecrawl's rendered HTML.
+        volumes = set()
+        for link in soup.select('a[href*="/nature/volumes/"]'):
+            match = re.fullmatch(r"(?:https?://[^/]+)?/nature/volumes/(\d+)/?", link["href"])
+            if match:
+                volumes.add(int(match.group(1)))
         if not volumes:
             logger.warning("No volumes found on %s", source_url)
             return []
-        volumes.sort(key=lambda href: int(href.rsplit("/", 1)[1]), reverse=True)
         return [
-            FeedItem(title=href.rsplit("/", 1)[1], url=f"{BASE_URL}{href}")
-            for href in volumes[: self.VOLUMES]
+            FeedItem(title=str(volume), url=f"{BASE_URL}/nature/volumes/{volume}")
+            for volume in sorted(volumes, reverse=True)[: self.VOLUMES]
         ]
 
     async def enrich(self, items: list[FeedItem], scraper: BaseScraper) -> list[FeedItem]:

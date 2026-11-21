@@ -99,3 +99,12 @@ def test_enrich_tolerates_failed_volume():
     volumes = PROVIDER.process(VOLUMES_HTML.replace("658", "600"), SOURCE)
     issues = asyncio.run(PROVIDER.enrich(volumes, FakeScraper()))
     assert len(issues) == 2
+
+
+def test_process_accepts_absolute_volume_links():
+    html = VOLUMES_HTML.replace('href="/nature', 'href="https://www.nature.com/nature')
+    items = PROVIDER.process(html, SOURCE)
+    assert [i.url for i in items] == [
+        "https://www.nature.com/nature/volumes/659",
+        "https://www.nature.com/nature/volumes/658",
+    ]
