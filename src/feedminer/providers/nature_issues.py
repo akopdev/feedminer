@@ -1,31 +1,26 @@
-import asyncio
 import logging
 import re
 from datetime import datetime
+from html import escape
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
 from ..models import FeedItem
-from ..scrapers.base import BaseScraper
 from .base import BaseProvider
 
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://www.nature.com"
+HEADING_RE = re.compile(r"Volume (\d+) Issue (\d+), (\d{1,2} [A-Z][a-z]+ \d{4})")
 
 
 class NatureIssuesProvider(BaseProvider):
-    """Latest issues of Nature magazine.
-
-    The source URL is the volumes index. ``process`` picks the newest volumes and
-    ``enrich`` expands each of them into its issues (a volume holds ~4 issues).
-    """
+    """The current issue of Nature as a single item: cover + table of contents."""
 
     DOMAIN = "nature.com"
     scraper = "firecrawl"
-    PATH = "/nature/volumes"
-    VOLUMES = 2
+    PATH = "/nature/current-issue"
 
     @property
     def feed_title(self) -> str:
@@ -41,78 +36,68 @@ class NatureIssuesProvider(BaseProvider):
 
     def process(self, html: str, source_url: str) -> list[FeedItem]:
         soup = BeautifulSoup(html, "lxml")
-        # Links are relative in the raw page but absolute in Firecrawl's rendered HTML.
-        volumes = set()
-        for link in soup.select('a[href*="/nature/volumes/"]'):
-            match = re.fullmatch(r"(?:https?://[^/]+)?/nature/volumes/(\d+)/?", link["href"])
-            if match:
-                volumes.add(int(match.group(1)))
-        if not volumes:
-            logger.warning("No volumes found on %s", source_url)
+
+        heading = soup.find("h1", string=HEADING_RE)
+        if not heading:
+            logger.warning("No issue heading found on %s", source_url)
             return []
-        return [
-            FeedItem(title=str(volume), url=f"{BASE_URL}/nature/volumes/{volume}")
-            for volume in sorted(volumes, reverse=True)[: self.VOLUMES]
-        ]
+        volume, number, date = HEADING_RE.search(heading.get_text()).groups()
+        published_at = datetime.strptime(date, "%d %B %Y")
 
-    async def enrich(self, items: list[FeedItem], scraper: BaseScraper) -> list[FeedItem]:
-        pages = await asyncio.gather(*(self._fetch_volume(i.url, scraper) for i in items))
-        issues = [issue for page in pages for issue in page]
-        return sorted(issues, key=lambda i: i.published_at or datetime.min, reverse=True)
-
-    async def _fetch_volume(self, url: str, scraper: BaseScraper) -> list[FeedItem]:
-        try:
-            return self.parse_volume(await scraper.fetch(url))
-        except Exception as exc:
-            logger.warning("Could not fetch volume page %s: %s", url, exc)
-            return []
-
-    def parse_volume(self, html: str) -> list[FeedItem]:
-        soup = BeautifulSoup(html, "lxml")
-        items = []
-        for card in soup.select('li[itemtype="https://schema.org/PublicationIssue"]'):
-            try:
-                items.append(self._card_to_item(card))
-            except Exception as exc:
-                logger.warning("Skipping malformed issue: %s", exc)
-        return items
-
-    def _card_to_item(self, card) -> FeedItem:
-        link = card.select_one("a[href]")
-        href = link["href"]
-        url = href if href.startswith("http") else f"{BASE_URL}{href}"
-
-        number = card.select_one('[itemprop="issueNumber"]')["content"]
-
-        published_at = None
-        date_tag = card.select_one('[itemprop="datePublished"]')
-        if date_tag:
-            try:
-                published_at = datetime.strptime(date_tag["content"], "%d %B %Y")
-            except (KeyError, ValueError):
-                pass
+        cover = soup.select_one(".app-volumes-cover img[src]")
+        image_url = cover["src"] if cover else None
 
         headline = None
-        description = None
-        blurb = card.select_one("[data-show-more]")
+        blurb = None
+        copy = soup.select_one(".app-volumes-cover__copy")
+        if copy:
+            headline_tag = copy.select_one("h2")
+            headline = _text(headline_tag) if headline_tag else None
+            # The blurb is cut into a visible paragraph and a hidden "show more" remainder.
+            pieces = copy.select("p[data-promo-text], .app-promo-text__hidden-container")
+            blurb = " ".join("".join(piece.get_text() for piece in pieces).split()) or None
+
+        parts = []
+        if image_url:
+            parts.append(f'<p><img src="{escape(image_url)}" alt="Cover"/></p>')
         if blurb:
-            paragraph = blurb.find("p")
-            if paragraph:
-                description = " ".join(paragraph.get_text().split()) or None
-                paragraph.extract()
-            headline = " ".join(blurb.get_text().split()) or None
+            parts.append(f"<p>{escape(blurb)}</p>")
+        for section, articles in self._sections(soup):
+            parts.append(f"<h3>{escape(section)}</h3><ul>")
+            parts.extend(
+                f'<li><a href="{escape(href)}">{escape(text)}</a></li>' for text, href in articles
+            )
+            parts.append("</ul>")
 
-        title = f"Issue {number}: {headline}" if headline else f"Issue {number}"
+        return [
+            FeedItem(
+                title=f"Issue {number}: {headline}" if headline else f"Issue {number}",
+                url=f"{BASE_URL}/nature/volumes/{volume}/issues/{number}",
+                description="".join(parts) or None,
+                published_at=published_at,
+                image_url=image_url,
+            )
+        ]
 
-        image_url = None
-        img = card.select_one("img[src]")
-        if img:
-            image_url = re.sub(r"/w\d+/", "/w440/", img["src"], count=1)
+    def _sections(self, soup) -> list[tuple[str, list[tuple[str, str]]]]:
+        # Section headings and article cards come in document order, so walk both
+        # together and attach each article to the most recent heading.
+        sections = []
+        for tag in soup.select("h3.c-section-heading, h3.c-card__title"):
+            if "c-section-heading" in tag.get("class", []):
+                sections.append((_text(tag), []))
+                continue
+            link = tag.select_one("a[href]")
+            if not link:
+                continue
+            if not sections:
+                sections.append(("", []))
+            href = link["href"]
+            href = href if href.startswith("http") else f"{BASE_URL}{href}"
+            sections[-1][1].append((_text(link), href))
+        return [(name, articles) for name, articles in sections if articles]
 
-        return FeedItem(
-            title=title,
-            url=url,
-            description=description,
-            published_at=published_at,
-            image_url=image_url,
-        )
+
+def _text(tag) -> str:
+    # get_text(strip=True) would glue words around inline tags like <i>.
+    return " ".join(tag.get_text().split())

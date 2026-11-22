@@ -15,7 +15,7 @@ List of supported resources
 - https://yalebooks.yale.edu/books/new-releases/
 - https://www.sup.org/books/subjects/middle-east-studies
 - https://www.nature.com/books-culture
-- https://www.nature.com/nature/volumes
+- https://www.nature.com/nature/current-issue
 - https://www.newyorker.com/cartoons/daily-cartoon
 - https://orbooks.com/catalog/?sort=newest
 - https://www.economist.com/weeklyedition

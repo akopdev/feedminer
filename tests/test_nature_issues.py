@@ -1,110 +1,75 @@
-import asyncio
 from datetime import datetime
 
 from feedminer.providers.nature_issues import NatureIssuesProvider
 
 PROVIDER = NatureIssuesProvider()
-SOURCE = "https://www.nature.com/nature/volumes"
+SOURCE = "https://www.nature.com/nature/current-issue"
+COVER = "https://media.springernature.com/w440/springer-static/cover-hires/journal/41586/659/8141"
 
-VOLUMES_HTML = """
-<html><body><ul>
-  <li><time datetime="2026-10">October 2026</time><a href="/nature/volumes/658">Volume 658</a></li>
-  <li><time datetime="2026-11">November 2026</time><a href="/nature/volumes/659">Volume 659</a></li>
-  <li><a href="/nature/volumes/659">Volume 659</a></li>
-  <li><a href="/nature/volumes/657">Volume 657</a></li>
-  <li><a href="/nature/volumes/659/issues/8141">not a volume</a></li>
-</ul></body></html>
+SAMPLE_HTML = f"""
+<html><body>
+  <h1 class="u-h2 u-mb-0 u-mr-8">Volume 659 Issue 8141, 19 November 2026</h1>
+  <div class="app-volumes-cover" data-test="issue-cover-container">
+    <div class="app-volumes-cover__copy" data-test="issue-description"><div>
+      <h2 class="u-h3">Stepping stones</h2>
+      <p data-promo-text=""><span>Climate is a factor. But </span><a href="https://doi.org/x">Jeffrey Rose</a><span> and colleagues reveal stone. Signs at</span></p>
+      <div class="app-promo-text__hidden-container u-js-hide"><span> palaeolakes were absent.</span></div>
+      <span>Show more</span>
+    </div></div>
+    <div class="app-volumes-cover__image"><img src="{COVER}" alt="Cover"></div>
+  </div>
+  <h2>This Week</h2>
+  <h3 class="c-section-heading c-section-heading--no-bt">Editorial</h3>
+  <article><h3 class="c-card__title">
+    <a href="https://www.nature.com/articles/d41586-026-03707-7">Open up peer review</a>
+  </h3></article>
+  <h3 class="c-section-heading c-section-heading--no-bt">Empty</h3>
+  <h3 class="c-section-heading c-section-heading--no-bt">News &amp; Views</h3>
+  <article><h3 class="c-card__title">
+    <a href="/articles/d41586-026-03273-y">Intra-stellar: a <i>star</i> inside a giant star</a>
+  </h3></article>
+  <article><h3 class="c-card__title">No link here</h3></article>
+</body></html>
 """
-
-
-def volume_html(issues):
-    cards = "".join(
-        f"""
-        <li class="flex-box" itemscope="itemscope" itemtype="https://schema.org/PublicationIssue" itemprop="hasPart">
-          <div data-component="equal-height-item">
-            <a itemprop="url" href=/nature/volumes/{vol}/issues/{num}>
-              <img src="https://media.springernature.com/w200/springer-static/cover-hires/journal/41586/{vol}/{num}" alt="">
-              <h2 itemprop="issueNumber" content="{num}">No. {num}
-                <span itemprop="datePublished" content="{date}">{date}</span></h2>
-            </a>
-            <div class="pa20" data-show-more data-show-more-length="200">
-              {headline}
-              <p>{blurb}</p>
-            </div>
-          </div>
-        </li>"""
-        for vol, num, date, headline, blurb in issues
-    )
-    return f'<html><body><ul id="issue-list">{cards}</ul></body></html>'
-
-
-VOLUME_659 = volume_html(
-    [
-        ("659", "8141", "19 November 2026", "Stepping stones", "Stone shaped dispersal."),
-        ("659", "8140", "12 November 2026", "", ""),
-    ]
-)
-VOLUME_658 = volume_html([("658", "8137", "29 October 2026", "Deep time", "Old rocks.")])
-
-
-class FakeScraper:
-    async def fetch(self, url):
-        if url.endswith("/659"):
-            return VOLUME_659
-        if url.endswith("/658"):
-            return VOLUME_658
-        raise RuntimeError("boom")
 
 
 def test_is_active():
     assert PROVIDER.is_active(SOURCE)
     assert PROVIDER.is_active(SOURCE + "/")
-    assert not PROVIDER.is_active("https://www.nature.com/nature/volumes/659")
+    assert not PROVIDER.is_active("https://www.nature.com/nature/volumes")
     assert not PROVIDER.is_active("https://www.nature.com/books-culture")
-    assert not PROVIDER.is_active("https://example.com/nature/volumes")
+    assert not PROVIDER.is_active("https://example.com/nature/current-issue")
 
 
-def test_process_picks_newest_volumes():
-    items = PROVIDER.process(VOLUMES_HTML, SOURCE)
-    assert [i.url for i in items] == [
-        "https://www.nature.com/nature/volumes/659",
-        "https://www.nature.com/nature/volumes/658",
-    ]
+def test_process_single_issue_item():
+    [item] = PROVIDER.process(SAMPLE_HTML, SOURCE)
+    assert item.title == "Issue 8141: Stepping stones"
+    assert item.url == "https://www.nature.com/nature/volumes/659/issues/8141"
+    assert item.published_at == datetime(2026, 11, 19)
+    assert item.image_url == COVER
 
 
-def test_process_empty():
-    assert PROVIDER.process("<html></html>", SOURCE) == []
+def test_process_description_has_cover_blurb_and_contents():
+    [item] = PROVIDER.process(SAMPLE_HTML, SOURCE)
+    desc = item.description
+    assert desc.startswith(f'<p><img src="{COVER}"')
+    assert (
+        "<p>Climate is a factor. But Jeffrey Rose and colleagues reveal stone. "
+        "Signs at palaeolakes were absent.</p>"
+    ) in desc
+    assert "Show more" not in desc
+    assert "<h3>News &amp; Views</h3>" in desc
+    assert (
+        '<li><a href="https://www.nature.com/articles/d41586-026-03707-7">'
+        "Open up peer review</a></li>"
+    ) in desc
+    assert (
+        '<a href="https://www.nature.com/articles/d41586-026-03273-y">'
+        "Intra-stellar: a star inside a giant star</a>"
+    ) in desc
+    assert desc.index("Editorial") < desc.index("News &amp; Views")
+    assert "Empty" not in desc
 
 
-def test_parse_volume_fields():
-    first, second = PROVIDER.parse_volume(VOLUME_659)
-    assert first.title == "Issue 8141: Stepping stones"
-    assert first.url == "https://www.nature.com/nature/volumes/659/issues/8141"
-    assert first.description == "Stone shaped dispersal."
-    assert first.published_at == datetime(2026, 11, 19)
-    assert first.image_url == (
-        "https://media.springernature.com/w440/springer-static/cover-hires/journal/41586/659/8141"
-    )
-    assert second.title == "Issue 8140"
-    assert second.description is None
-
-
-def test_enrich_expands_volumes_into_issues_newest_first():
-    volumes = PROVIDER.process(VOLUMES_HTML, SOURCE)
-    issues = asyncio.run(PROVIDER.enrich(volumes, FakeScraper()))
-    assert [i.title.split(":")[0] for i in issues] == ["Issue 8141", "Issue 8140", "Issue 8137"]
-
-
-def test_enrich_tolerates_failed_volume():
-    volumes = PROVIDER.process(VOLUMES_HTML.replace("658", "600"), SOURCE)
-    issues = asyncio.run(PROVIDER.enrich(volumes, FakeScraper()))
-    assert len(issues) == 2
-
-
-def test_process_accepts_absolute_volume_links():
-    html = VOLUMES_HTML.replace('href="/nature', 'href="https://www.nature.com/nature')
-    items = PROVIDER.process(html, SOURCE)
-    assert [i.url for i in items] == [
-        "https://www.nature.com/nature/volumes/659",
-        "https://www.nature.com/nature/volumes/658",
-    ]
+def test_process_without_heading_returns_empty():
+    assert PROVIDER.process("<html><body><h1>Nature</h1></body></html>", SOURCE) == []
